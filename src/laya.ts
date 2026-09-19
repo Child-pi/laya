@@ -9,7 +9,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import * as ort from "onnxruntime-node";
-import { PreTrainedTokenizer } from "@huggingface/transformers";
+import { Tokenizer } from "@huggingface/tokenizers";
 import { buildSequence, confidenceFromProbs, QTYPES, renderOptions, softmax, tempBucket, toInternal, type SpecialIds } from "./sequence.js";
 import { ensureBundle, type DownloadOptions } from "./download.js";
 import type { Answer, LayaConfig, Question, SystemOneResult } from "./types.js";
@@ -31,7 +31,7 @@ const round4 = (x: number) => Math.round(x * 1e4) / 1e4;
 export class Laya {
   private constructor(
     private readonly session: ort.InferenceSession,
-    private readonly tok: PreTrainedTokenizer,
+    private readonly tok: Tokenizer,
     readonly config: LayaConfig,
     private readonly ids: SpecialIds,
     /** where the bundle was loaded from */
@@ -42,12 +42,9 @@ export class Laya {
     const modelDir = opts.modelDir ? path.resolve(opts.modelDir) : await ensureBundle(opts);
     const read = async (f: string) => JSON.parse(await readFile(path.join(modelDir, f), "utf8")) as unknown;
     const config = (await read("laya_config.json")) as LayaConfig;
-    const tok = new PreTrainedTokenizer(
-      (await read("tokenizer/tokenizer.json")) as ConstructorParameters<typeof PreTrainedTokenizer>[0],
-      (await read("tokenizer/tokenizer_config.json")) as ConstructorParameters<typeof PreTrainedTokenizer>[1],
-    );
+    const tok = new Tokenizer((await read("tokenizer/tokenizer.json")) as object, (await read("tokenizer/tokenizer_config.json")) as object);
     const id = (t: string) => {
-      const v = tok.model.tokens_to_ids.get(t);
+      const v = tok.token_to_id(t);
       if (v === undefined) throw new Error(`special token ${t} missing from tokenizer`);
       return v;
     };
@@ -60,7 +57,7 @@ export class Laya {
     return new Laya(session, tok, config, ids, modelDir);
   }
 
-  private encode = (text: string): number[] => this.tok.encode(text, { add_special_tokens: false });
+  private encode = (text: string): number[] => this.tok.encode(text, { add_special_tokens: false }).ids;
 
   /** Answer every question about `state` in one forward pass (Jev's `system_one` request/response shape). */
   async systemOne<Q extends Record<string, Question>>(state: unknown, questions: Q): Promise<SystemOneResult<Q>> {
