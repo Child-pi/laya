@@ -1,6 +1,6 @@
 {
   "name": "@receptron/laya",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run Laya (convaiinnovations/laya), the open-source Jev-compatible System-1 decision model, from Node.js / TypeScript via ONNX Runtime",
   "license": "MIT",
   "author": "receptron",
