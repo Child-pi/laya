@@ -1,0 +1,62 @@
+{
+  "name": "@receptron/laya",
+  "version": "0.1.0",
+  "description": "Run Laya (convaiinnovations/laya), the open-source Jev-compatible System-1 decision model, from Node.js / TypeScript via ONNX Runtime",
+  "license": "MIT",
+  "author": "receptron",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/receptron/laya.git"
+  },
+  "homepage": "https://github.com/receptron/laya#readme",
+  "bugs": {
+    "url": "https://github.com/receptron/laya/issues"
+  },
+  "keywords": [
+    "laya",
+    "jev",
+    "system-one",
+    "decision-model",
+    "onnx",
+    "onnxruntime",
+    "modernbert",
+    "classification"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p test/tsconfig.json --noEmit",
+    "test": "tsx --test ./test/test_*.ts",
+    "format": "prettier --write \"{src,test,examples}/**/*.ts\" \"*.{json,md}\"",
+    "format:check": "prettier --check \"{src,test,examples}/**/*.ts\" \"*.{json,md}\"",
+    "example": "tsx examples/basic.ts",
+    "prepublishOnly": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.7.0",
+    "onnxruntime-node": "^1.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "prettier": "^3.6.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

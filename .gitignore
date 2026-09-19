@@ -1,0 +1,7 @@
+node_modules/
+dist/
+onnx/laya.onnx
+onnx/laya.onnx.data
+export/model/
+export/.venv/
+.DS_Store
