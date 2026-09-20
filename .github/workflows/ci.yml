@@ -26,13 +26,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         node: ["20.x", "22.x", "24.x"]
-    env:
-      # linux/x64 is the only platform whose onnxruntime-node install pulls the
-      # CUDA 12 execution provider from the Nuget feed. This library runs the
-      # "cpu" provider (src/laya.ts), so that download buys CI nothing and adds
-      # a large third-party fetch to every ubuntu cell. `skip` exits the
-      # postinstall before any platform lookup, so it is inert elsewhere.
-      ONNXRUNTIME_NODE_INSTALL: skip
     steps:
       - uses: actions/checkout@v7
         with:
