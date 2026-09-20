@@ -40,7 +40,7 @@ export class Laya {
 
   static async load(opts: LayaOptions = {}): Promise<Laya> {
     const modelDir = opts.modelDir ? path.resolve(opts.modelDir) : await ensureBundle(opts);
-    const read = async (f: string) => JSON.parse(await readFile(path.join(modelDir, f), "utf8")) as unknown;
+    const read = async (f: string): Promise<unknown> => JSON.parse(await readFile(path.join(modelDir, f), "utf8"));
     const config = (await read("laya_config.json")) as LayaConfig;
     const tok = new Tokenizer((await read("tokenizer/tokenizer.json")) as object, (await read("tokenizer/tokenizer_config.json")) as object);
     const id = (t: string) => {
@@ -57,7 +57,7 @@ export class Laya {
     return new Laya(session, tok, config, ids, modelDir);
   }
 
-  private encode = (text: string): number[] => this.tok.encode(text, { add_special_tokens: false }).ids;
+  private readonly encode = (text: string): number[] => this.tok.encode(text, { add_special_tokens: false }).ids;
 
   /** Answer every question about `state` in one forward pass (Jev's `system_one` request/response shape). */
   async systemOne<Q extends Record<string, Question>>(state: unknown, questions: Q): Promise<SystemOneResult<Q>> {
