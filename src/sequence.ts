@@ -55,10 +55,16 @@ export function serializeState(state: unknown): string {
   return typeof state === "string" ? state : pyJsonDumps(state);
 }
 
+function sizeBucket(k: number): string {
+  if (k <= 2) return "2";
+  if (k <= 5) return "3-5";
+  if (k <= 10) return "6-10";
+  return "11+";
+}
+
 /** Key for the per-cardinality temperature: a 2-option noul and a 20-option choice need different scaling. */
 export function tempBucket(qtype: number, k: number): string {
-  const size = k <= 2 ? "2" : k <= 5 ? "3-5" : k <= 10 ? "6-10" : "11+";
-  return `${QTYPE_NAMES[qtype]}:${size}`;
+  return `${QTYPE_NAMES[qtype]}:${sizeBucket(k)}`;
 }
 
 /** Jev-style confidence: 1 - normalized entropy of the answer distribution. */

@@ -48,6 +48,40 @@ test("buildSequence scrubs the mask token from user text", () => {
   assert.equal(seq.filter((v) => v === 3).length, 2);
 });
 
+// Harvested from the differential run that replaced tempBucket's nested ternary: the generator
+// (which inputs decide the answer) and the property (where each bucket must start and stop).
+// The old implementation is gone, so these pin the boundaries directly instead of comparing.
+test("tempBucket bucket boundaries and qtype prefix", () => {
+  const expected: [number, string][] = [
+    [-1, "2"],
+    [0, "2"],
+    [2, "2"],
+    [3, "3-5"],
+    [5, "3-5"],
+    [6, "6-10"],
+    [10, "6-10"],
+    [11, "11+"],
+    [1000, "11+"],
+  ];
+  expected.forEach(([k, size]) => {
+    assert.equal(tempBucket(0, k), `choice:${size}`, `k=${k}`);
+  });
+
+  // every qtype name reaches the key
+  assert.equal(tempBucket(0, 2), "choice:2");
+  assert.equal(tempBucket(1, 2), "score:2");
+  assert.equal(tempBucket(2, 2), "noul:2");
+
+  // non-integer k falls in the bucket its comparisons put it in, not a rounded one
+  assert.equal(tempBucket(0, 2.5), "choice:3-5");
+  assert.equal(tempBucket(0, 10.5), "choice:11+");
+
+  // NaN fails every `<=`, so it lands in the final bucket
+  assert.equal(tempBucket(0, NaN), "choice:11+");
+  assert.equal(tempBucket(0, Infinity), "choice:11+");
+  assert.equal(tempBucket(0, -Infinity), "choice:2");
+});
+
 test("tempBucket / softmax / confidence", () => {
   assert.equal(tempBucket(0, 2), "choice:2");
   assert.equal(tempBucket(1, 4), "score:3-5");
