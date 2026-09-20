@@ -8,18 +8,40 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # The `github.run_id` fallback puts every push-to-main run in a group of its
+  # own, so a main run is never cancelled by a later one.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   check:
-    runs-on: ubuntu-latest
+    name: check (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
+      # An OS-specific break should be visible on its own cell, not hidden by
+      # whichever sibling happened to fail first.
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         node: ["20.x", "22.x", "24.x"]
+    env:
+      # linux/x64 is the only platform whose onnxruntime-node install pulls the
+      # CUDA 12 execution provider from the Nuget feed. This library runs the
+      # "cpu" provider (src/laya.ts), so that download buys CI nothing and adds
+      # a large third-party fetch to every ubuntu cell. `skip` exits the
+      # postinstall before any platform lookup, so it is inert elsewhere.
+      ONNXRUNTIME_NODE_INSTALL: skip
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false # nothing here pushes; don't leave the token in .git/config
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: yarn install --frozen-lockfile
+          cache: yarn
+      - run: yarn install --frozen-lockfile --network-timeout 120000
       - run: yarn format:check
       - run: yarn typecheck
       - run: yarn build
