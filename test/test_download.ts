@@ -21,7 +21,7 @@ test("ensureBundle downloads every file once, then only HEAD-checks", async () =
   const cacheDir = await mkdtemp(path.join(tmpdir(), "laya-"));
   const calls: string[] = [];
   const realFetch = globalThis.fetch;
-  globalThis.fetch = stubFetch("v1", calls) as typeof fetch;
+  globalThis.fetch = stubFetch("v1", calls);
   try {
     const dir = await ensureBundle({ repo: "acme/bundle", cacheDir, subfolder: "multilingual" });
     assert.equal(dir, path.join(cacheDir, "acme--bundle", "main", "multilingual/"));
@@ -48,7 +48,7 @@ test("ensureBundle downloads every file once, then only HEAD-checks", async () =
 test("ensureBundle surfaces HTTP errors and leaves no partial file", async () => {
   const cacheDir = await mkdtemp(path.join(tmpdir(), "laya-"));
   const realFetch = globalThis.fetch;
-  globalThis.fetch = (async () => new Response("nope", { status: 404, statusText: "Not Found" })) as typeof fetch;
+  globalThis.fetch = async () => new Response("nope", { status: 404, statusText: "Not Found" });
   try {
     await assert.rejects(ensureBundle({ repo: "acme/missing", cacheDir }), /404 Not Found/);
   } finally {

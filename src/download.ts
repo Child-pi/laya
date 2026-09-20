@@ -72,7 +72,7 @@ export async function ensureBundle(opts: DownloadOptions = {}): Promise<string> 
     const tmp = `${dest}.part-${process.pid}`;
     let received = 0;
     const progress = opts.onProgress;
-    const body = Readable.fromWeb(res.body as import("node:stream/web").ReadableStream);
+    const body = Readable.fromWeb(res.body);
     if (progress) {
       body.on("data", (chunk: Buffer) => {
         received += chunk.length;
