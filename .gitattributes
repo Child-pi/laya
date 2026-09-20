@@ -1,0 +1,4 @@
+# Check text files out as LF on every OS. Git for Windows defaults to
+# core.autocrlf=true, and a CRLF working tree makes `prettier --check`
+# (endOfLine defaults to "lf") report every file as unformatted.
+* text=auto eol=lf

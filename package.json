@@ -43,7 +43,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p test/tsconfig.json --noEmit",
-    "test": "tsx --test ./test/test_*.ts",
+    "test": "tsx --test test/test_download.ts test/test_model.ts test/test_sequence.ts",
     "format": "prettier --write \"{src,test,examples}/**/*.ts\" \"*.{json,md}\"",
     "format:check": "prettier --check \"{src,test,examples}/**/*.ts\" \"*.{json,md}\"",
     "example": "tsx examples/basic.ts",
