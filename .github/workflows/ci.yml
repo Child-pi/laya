@@ -36,6 +36,7 @@ jobs:
           cache: yarn
       - run: yarn install --frozen-lockfile --network-timeout 120000
       - run: yarn format:check
+      - run: yarn lint
       - run: yarn typecheck
       - run: yarn build
       # unit tests only; the model-backed test skips itself when the weights are not on disk

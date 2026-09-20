@@ -42,7 +42,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p test/tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p test/tsconfig.json --noEmit && tsc -p examples/tsconfig.json --noEmit",
     "test": "tsx --test test/test_download.ts test/test_model.ts test/test_sequence.ts",
     "format": "prettier --write \"{src,test,examples}/**/*.ts\" \"*.{json,md}\"",
     "format:check": "prettier --check \"{src,test,examples}/**/*.ts\" \"*.{json,md}\"",
@@ -54,9 +55,16 @@
     "onnxruntime-node": "^1.22.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10",
     "@types/node": "^24.0.0",
+    "eslint": "^10",
+    "eslint-config-prettier": "^10",
+    "eslint-plugin-prettier": "^5",
+    "eslint-plugin-sonarjs": "^4",
+    "globals": "^17",
     "prettier": "^3.6.0",
     "tsx": "^4.20.0",
-    "typescript": "^5.9.0"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8"
   }
 }
