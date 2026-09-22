@@ -1,6 +1,7 @@
 """
 🐍 Laya System-1 Decision Agent: Gradio Web UI for Snake Game (貪吃蛇)
-Designed for Google Colab and local execution with smooth, flicker-free rendering.
+Optimized for Google Colab with robust queue handling, zero-flicker DOM diffing,
+and timeout-prevention (supporting both gr.Timer and non-blocking streaming).
 """
 
 import os
@@ -217,11 +218,10 @@ class SnakeGame:
 # 3. HTML/SVG UI Generator (Zero Flicker)
 # ==========================================
 def render_board_html(game, answers=None, latency_ms=0.0):
-    cell_size = 42
+    cell_size = 40
     w_px = game.width * cell_size
     h_px = game.height * cell_size
 
-    # Cells rendering
     grid_cells = ""
     for y in range(game.height):
         for x in range(game.width):
@@ -252,12 +252,11 @@ def render_board_html(game, answers=None, latency_ms=0.0):
             grid_cells += f"""
             <div style="position: absolute; left: {left}px; top: {top}px; width: {cell_size - 4}px; height: {cell_size - 4}px;
                         background: {bg}; border-radius: {border_radius}; display: flex; align-items: center; justify-content: center;
-                        font-size: 22px; user-select: none; transition: all 0.15s ease-in-out; {shadow}">
+                        font-size: 20px; user-select: none; transition: all 0.15s ease-in-out; {shadow}">
                 {content}
             </div>
             """
 
-    # Telemetry rendering
     if answers:
         choice = answers["next_move"]["choice"]
         conf = answers["next_move"]["confidence"] * 100
@@ -272,17 +271,16 @@ def render_board_html(game, answers=None, latency_ms=0.0):
             bar_color = "#10b981" if is_best else "#475569"
             badge = "<span style='color: #4ade80; font-weight: bold;'>★</span>" if is_best else ""
             prob_bars += f"""
-            <div style="margin-bottom: 8px;">
+            <div style="margin-bottom: 6px;">
                 <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #f1f5f9;">
                     <span>{badge} {d}</span>
                     <span>{p:.1f}%</span>
                 </div>
-                <div style="background: #334155; height: 7px; border-radius: 4px; overflow: hidden; margin-top: 3px;">
+                <div style="background: #334155; height: 7px; border-radius: 4px; overflow: hidden; margin-top: 2px;">
                     <div style="width: {p}%; height: 100%; background: {bar_color}; transition: width 0.2s ease;"></div>
                 </div>
             </div>
             """
-
         status_badge = "<span style='background: #065f46; color: #34d399; padding: 4px 10px; border-radius: 9999px; font-size: 13px; font-weight: 600;'>🟢 存活中</span>" if game.alive else "<span style='background: #991b1b; color: #fca5a5; padding: 4px 10px; border-radius: 9999px; font-size: 13px; font-weight: 600;'>💥 遊戲結束</span>"
     else:
         choice = "等待中"
@@ -293,52 +291,48 @@ def render_board_html(game, answers=None, latency_ms=0.0):
         status_badge = "<span style='background: #334155; color: #94a3b8; padding: 4px 10px; border-radius: 9999px; font-size: 13px;'>⏳ 就緒</span>"
 
     html = f"""
-    <div style="background: #0f172a; border-radius: 16px; padding: 24px; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4); max-width: 820px; margin: 0 auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 14px;">
+    <div style="background: #0f172a; border-radius: 16px; padding: 20px; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4); max-width: 800px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #334155; padding-bottom: 12px;">
             <div>
-                <h2 style="margin: 0; font-size: 22px; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+                <h2 style="margin: 0; font-size: 20px; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
                     🐍 Laya System-1 貪吃蛇決策儀表板
                 </h2>
-                <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">無自回歸延遲 • 單次 Forward Pass 預測全決策</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;">無自回歸延遲 • 單次 Forward Pass 預測全決策</div>
             </div>
             <div>{status_badge}</div>
         </div>
 
-        <div style="display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap;">
-            <!-- Game Grid -->
+        <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
             <div style="position: relative; width: {w_px}px; height: {h_px}px; background: #0b1120; border-radius: 12px; padding: 2px; border: 2px solid #334155;">
                 {grid_cells}
             </div>
 
-            <!-- Telemetry Column -->
-            <div style="flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 14px;">
-                <!-- Stats Row -->
+            <div style="flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 12px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div style="background: #1e293b; padding: 12px; border-radius: 10px; border-left: 4px solid #38bdf8;">
+                    <div style="background: #1e293b; padding: 10px; border-radius: 8px; border-left: 4px solid #38bdf8;">
                         <div style="font-size: 12px; color: #94a3b8;">當前得分</div>
-                        <div style="font-size: 24px; font-weight: 700; color: #fbbf24;">🍎 {game.score}</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #fbbf24;">🍎 {game.score}</div>
                     </div>
-                    <div style="background: #1e293b; padding: 12px; border-radius: 10px; border-left: 4px solid #a855f7;">
+                    <div style="background: #1e293b; padding: 10px; border-radius: 8px; border-left: 4px solid #a855f7;">
                         <div style="font-size: 12px; color: #94a3b8;">存活步數</div>
-                        <div style="font-size: 24px; font-weight: 700; color: #c084fc;">👣 {game.steps}</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #c084fc;">👣 {game.steps}</div>
                     </div>
                 </div>
 
-                <!-- Laya Decision Box -->
                 <div style="background: #1e293b; padding: 14px; border-radius: 12px; border: 1px solid #334155;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <span style="font-size: 13px; color: #94a3b8; font-weight: 600;">⚡ System-1 即時決策</span>
-                        <span style="font-size: 12px; background: #0284c7; color: #e0f2fe; padding: 2px 8px; border-radius: 6px;">{latency_ms:.1f} ms</span>
+                        <span style="font-size: 11px; background: #0284c7; color: #e0f2fe; padding: 2px 8px; border-radius: 6px;">{latency_ms:.1f} ms</span>
                     </div>
-                    <div style="font-size: 16px; margin-bottom: 12px;">
-                        方向: <b style="color: #4ade80; font-size: 20px;">{choice}</b> 
-                        <span style="font-size: 13px; color: #94a3b8; margin-left: 6px;">(信心度: {conf:.1f}%)</span>
+                    <div style="font-size: 15px; margin-bottom: 10px;">
+                        方向: <b style="color: #4ade80; font-size: 18px;">{choice}</b> 
+                        <span style="font-size: 12px; color: #94a3b8; margin-left: 6px;">(信心度: {conf:.1f}%)</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #cbd5e1; margin-bottom: 12px; background: #0f172a; padding: 8px 12px; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #cbd5e1; margin-bottom: 10px; background: #0f172a; padding: 6px 10px; border-radius: 8px;">
                         <span>危險指數: <b>{danger:.2f}/3.0</b></span>
                         <span>路徑可行性: <b>{viability:.1f}%</b></span>
                     </div>
-                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px; font-weight: 600;">各方向機率分佈 (Softmax):</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px; font-weight: 600;">各方向機率分佈 (Softmax):</div>
                     {prob_bars}
                 </div>
             </div>
@@ -351,6 +345,9 @@ def render_board_html(game, answers=None, latency_ms=0.0):
 # ==========================================
 # 4. Gradio Interface Construction
 # ==========================================
+class ControlState:
+    is_playing = False
+
 def build_gradio_app():
     print("📥 載入 Laya 模型中...")
     model_dir = snapshot_download("receptron/laya-onnx", allow_patterns=["laya.onnx", "laya.onnx.data", "laya_config.json", "tokenizer/*"])
@@ -358,15 +355,13 @@ def build_gradio_app():
     print("✅ Laya 模型準備就緒！")
 
     game = SnakeGame(8, 8)
+    ctrl = ControlState()
+
+    has_timer = hasattr(gr, "Timer")
 
     with gr.Blocks(title="Laya 貪吃蛇 - System-1 Decision Agent") as demo:
-        # State holders
-        running_state = gr.State(False)
-
-        # Main Layout
         board_display = gr.HTML(value=render_board_html(game))
 
-        # Control Panel
         with gr.Row():
             btn_start = gr.Button("▶ 開始自動遊玩 (Auto Play)", variant="primary", scale=2)
             btn_step = gr.Button("⏭ 單步決策 (Step)", variant="secondary", scale=1)
@@ -379,7 +374,6 @@ def build_gradio_app():
         with gr.Accordion("🔍 檢視 Laya 模型輸入與原始輸出 (Debug State)", open=False):
             state_json = gr.JSON(label="最新感知狀態與決策結果")
 
-        # Step Function
         def do_one_step():
             if not game.alive:
                 return render_board_html(game), {"status": "Game Over"}
@@ -408,30 +402,61 @@ def build_gradio_app():
             debug_info = {"perceptual_state": state, "laya_answers": answers, "latency_ms": latency}
             return html, debug_info
 
-        # Reset Function
         def on_reset():
+            ctrl.is_playing = False
             game.reset()
-            return render_board_html(game), {"status": "Reset", "score": 0}, False
+            return render_board_html(game), {"status": "Reset", "score": 0}
 
-        # Auto Play Generator Loop
+        def on_pause():
+            ctrl.is_playing = False
+            return render_board_html(game), {"status": "Paused"}
+
+        # Safe streaming auto-play with cooperative flag and limited yield duration
         def auto_play_loop(delay):
-            running = True
-            while running and game.alive:
+            ctrl.is_playing = True
+            max_steps_per_run = 60
+            steps = 0
+            while ctrl.is_playing and game.alive and steps < max_steps_per_run:
                 html, debug_info = do_one_step()
-                yield html, debug_info, True
+                steps += 1
+                yield html, debug_info
                 time.sleep(delay)
-            yield render_board_html(game), {"status": "Paused/Ended"}, False
+            ctrl.is_playing = False
+            yield render_board_html(game), {"status": "Idle / Stopped"}
 
-        # Event Handlers
-        btn_step.click(fn=do_one_step, outputs=[board_display, state_json])
-        btn_reset.click(fn=on_reset, outputs=[board_display, state_json, running_state])
-        btn_start.click(fn=auto_play_loop, inputs=[speed_slider], outputs=[board_display, state_json, running_state])
-        btn_pause.click(fn=lambda: False, outputs=[running_state])
+        # Use gr.Timer if available in modern Gradio, otherwise fall back to cooperative generator
+        if has_timer:
+            timer = gr.Timer(value=0.35, active=False)
+            def timer_tick():
+                if not game.alive:
+                    return render_board_html(game), {"status": "Game Over"}, gr.Timer(active=False)
+                html, debug_info = do_one_step()
+                if not game.alive:
+                    return html, debug_info, gr.Timer(active=False)
+                return html, debug_info, gr.Timer(active=True)
 
+            timer.tick(fn=timer_tick, outputs=[board_display, state_json, timer])
+            btn_start.click(lambda: gr.Timer(active=True), outputs=[timer])
+            btn_pause.click(lambda: gr.Timer(active=False), outputs=[timer])
+            btn_reset.click(fn=on_reset, outputs=[board_display, state_json])
+            speed_slider.change(lambda v: gr.Timer(value=v), inputs=[speed_slider], outputs=[timer])
+            btn_step.click(fn=do_one_step, outputs=[board_display, state_json])
+        else:
+            btn_step.click(fn=do_one_step, outputs=[board_display, state_json])
+            btn_reset.click(fn=on_reset, outputs=[board_display, state_json])
+            btn_start.click(fn=auto_play_loop, inputs=[speed_slider], outputs=[board_display, state_json])
+            btn_pause.click(fn=on_pause, outputs=[board_display, state_json])
+
+    # Enable queue with concurrency limit to prevent proxy timeouts
+    demo.queue(default_concurrency_limit=5)
     return demo
 
 
-if __name__ == "__main__":
+def launch_in_colab():
     app = build_gradio_app()
-    # In Google Colab, share=True creates a public gradio.live URL
-    app.launch(share=True, inbrowser=True)
+    # In Colab: server_name='0.0.0.0' allows external forwarding, inline=True embeds inside the notebook output
+    app.launch(share=True, inline=True, server_name="0.0.0.0", server_port=7860)
+
+
+if __name__ == "__main__":
+    launch_in_colab()
