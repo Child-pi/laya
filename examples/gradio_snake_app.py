@@ -411,41 +411,42 @@ def build_gradio_app():
             ctrl.is_playing = False
             return render_board_html(game), {"status": "Paused"}
 
-        # Safe streaming auto-play with cooperative flag and limited yield duration
+        # Playback controller
+        class PlaybackState:
+            is_running = False
+
+        state_ctrl = PlaybackState()
+
         def auto_play_loop(delay):
-            ctrl.is_playing = True
-            max_steps_per_run = 60
-            steps = 0
-            while ctrl.is_playing and game.alive and steps < max_steps_per_run:
+            state_ctrl.is_running = True
+            max_steps = 100
+            step_count = 0
+            while state_ctrl.is_running and game.alive and step_count < max_steps:
                 html, debug_info = do_one_step()
-                steps += 1
+                step_count += 1
                 yield html, debug_info
                 time.sleep(delay)
-            ctrl.is_playing = False
-            yield render_board_html(game), {"status": "Idle / Stopped"}
+            state_ctrl.is_running = False
+            yield render_board_html(game), {"status": "Stopped / Game Over"}
 
-        # Use gr.Timer if available in modern Gradio, otherwise fall back to cooperative generator
-        if has_timer:
-            timer = gr.Timer(value=0.35, active=False)
-            def timer_tick():
-                if not game.alive:
-                    return render_board_html(game), {"status": "Game Over"}, gr.Timer(active=False)
-                html, debug_info = do_one_step()
-                if not game.alive:
-                    return html, debug_info, gr.Timer(active=False)
-                return html, debug_info, gr.Timer(active=True)
+        def stop_play():
+            state_ctrl.is_running = False
+            return render_board_html(game), {"status": "Paused"}
 
-            timer.tick(fn=timer_tick, outputs=[board_display, state_json, timer])
-            btn_start.click(lambda: gr.Timer(active=True), outputs=[timer])
-            btn_pause.click(lambda: gr.Timer(active=False), outputs=[timer])
-            btn_reset.click(fn=on_reset, outputs=[board_display, state_json])
-            speed_slider.change(lambda v: gr.Timer(value=v), inputs=[speed_slider], outputs=[timer])
-            btn_step.click(fn=do_one_step, outputs=[board_display, state_json])
-        else:
-            btn_step.click(fn=do_one_step, outputs=[board_display, state_json])
-            btn_reset.click(fn=on_reset, outputs=[board_display, state_json])
-            btn_start.click(fn=auto_play_loop, inputs=[speed_slider], outputs=[board_display, state_json])
-            btn_pause.click(fn=on_pause, outputs=[board_display, state_json])
+        def reset_play():
+            state_ctrl.is_running = False
+            game.reset()
+            return render_board_html(game), {"status": "Reset", "score": 0}
+
+        # Event bindings using native Gradio cancels
+        play_event = btn_start.click(
+            fn=auto_play_loop,
+            inputs=[speed_slider],
+            outputs=[board_display, state_json]
+        )
+        btn_pause.click(fn=stop_play, outputs=[board_display, state_json], cancels=[play_event])
+        btn_reset.click(fn=reset_play, outputs=[board_display, state_json], cancels=[play_event])
+        btn_step.click(fn=do_one_step, outputs=[board_display, state_json])
 
     # Enable queue with concurrency limit to prevent proxy timeouts
     demo.queue(default_concurrency_limit=5)
