@@ -61,6 +61,15 @@ await laya.close();
 The answer types follow the question types, so `result.answers.department` is a `ChoiceAnswer`
 and `result.answers.churn_risk` a `NoulAnswer` without any casting.
 
+## Snake Game (貪吃蛇) Demo & Google Colab
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Child-pi/laya/blob/main/examples/laya_snake_colab.ipynb)
+
+A demo of using Laya as a real-time System-1 decision agent to control a Snake (貪吃蛇) game:
+- **TypeScript / Node.js**: `npm run snake` or `npx tsx examples/snake_demo.ts`
+- **Google Colab Notebook**: [`examples/laya_snake_colab.ipynb`](examples/laya_snake_colab.ipynb)
+- **Standalone Python**: `python examples/snake_laya_demo.py`
+
 ### Options
 
 ```ts
