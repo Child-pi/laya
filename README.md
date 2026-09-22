@@ -66,9 +66,10 @@ and `result.answers.churn_risk` a `NoulAnswer` without any casting.
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Child-pi/laya/blob/main/examples/laya_snake_colab.ipynb)
 
 A demo of using Laya as a real-time System-1 decision agent to control a Snake (貪吃蛇) game:
+- **Gradio Web UI (Zero-flicker, interactive)**: `python examples/gradio_snake_app.py`
+- **Google Colab Notebook**: [`examples/laya_snake_colab.ipynb`](examples/laya_snake_colab.ipynb) (Open in Colab for one-click Gradio UI)
 - **TypeScript / Node.js**: `npm run snake` or `npx tsx examples/snake_demo.ts`
-- **Google Colab Notebook**: [`examples/laya_snake_colab.ipynb`](examples/laya_snake_colab.ipynb)
-- **Standalone Python**: `python examples/snake_laya_demo.py`
+- **Standalone Python CLI**: `python examples/snake_laya_demo.py`
 
 ### Options
 
