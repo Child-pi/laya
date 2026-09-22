@@ -452,10 +452,70 @@ def build_gradio_app():
     return demo
 
 
+def start_cloudflare_tunnel(port=7860):
+    try:
+        import subprocess, re, time
+        res = subprocess.run(["which", "cloudflared"], capture_output=True, text=True)
+        if res.returncode != 0:
+            print("📦 正在自動安裝 Cloudflare Tunnel (徹底解決 504 逾時問題)...")
+            subprocess.run(["wget", "-q", "-nc", "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb"], check=False)
+            subprocess.run(["dpkg", "-i", "cloudflared-linux-amd64.deb"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+        proc = subprocess.Popen(
+            ["cloudflared", "tunnel", "--url", f"http://127.0.0.1:{port}"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        cf_url = None
+        start_t = time.time()
+        while time.time() - start_t < 10:
+            line = proc.stdout.readline()
+            if not line:
+                break
+            m = re.search(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com", line)
+            if m:
+                cf_url = m.group(0)
+                break
+            time.sleep(0.1)
+        return cf_url, proc
+    except Exception:
+        return None, None
+
+
 def launch_in_colab():
     app = build_gradio_app()
-    # In Colab: server_name='0.0.0.0' allows external forwarding, inline=True embeds inside the notebook output
-    app.launch(share=True, inline=True, server_name="0.0.0.0", server_port=7860)
+    
+    colab_url = None
+    cf_url = None
+    
+    # 1. Try Google Colab Native Proxy Port
+    try:
+        from google.colab.output import eval_js
+        colab_url = eval_js("google.colab.kernel.proxyPort(7860)")
+    except Exception:
+        pass
+
+    # 2. Try Cloudflare Tunnel
+    try:
+        cf_url, _ = start_cloudflare_tunnel(7860)
+    except Exception:
+        pass
+
+    print("\n" + "=" * 70)
+    print("🚀 【Laya 貪吃蛇 Web UI 啟動成功！】")
+    print("💡 為避免 gradio.live 官方反向代理在海外發生 504 Gateway Time-out，")
+    print("   請優先使用以下穩定通道：\n")
+    if colab_url:
+        print(f"👉 【1. Colab 原生直連（最推薦、零逾時）】: {colab_url}")
+    if cf_url:
+        print(f"👉 【2. Cloudflare 公開網址（手機/外網極速開啟）】: {cf_url}")
+    print("👉 【3. 內嵌畫面】: 直接操作 Colab 程式碼儲存格下方的內嵌介面")
+    print("=" * 70 + "\n")
+
+    # In Colab, share=False avoids generating the unreliable gradio.live frpc link
+    # Using server_name='0.0.0.0', inline=True, debug=True
+    app.launch(share=False, inline=True, server_name="0.0.0.0", server_port=7860, debug=True)
 
 
 if __name__ == "__main__":
